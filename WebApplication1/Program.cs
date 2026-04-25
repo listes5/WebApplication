@@ -8,9 +8,15 @@ using Microsoft.AspNetCore.Rewrite;
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
-
+/// <summary>
+/// diregere at hvis man skriver task/(int) så viderfører det den til ToDoList/int
+/// </summary>
+/// <param name="RewriteOptions().AddRedirect("tasks/(.*)""></param>
 app.UseRewriter(new RewriteOptions().AddRedirect("tasks/(.*)", "ToDoList/$1"));
 
+///<summary>
+/// Giver oplysninger hver gang noget går i gang og når det slutter
+/// </summary>
 app.Use(async (context, next) => //gør dette seperat, parrallel programming
 {
     //giv information om hvad der sker nu
