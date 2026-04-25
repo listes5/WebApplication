@@ -2,28 +2,38 @@ using System;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using WebApplication1.ExceptionHandling;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Rewrite;
 
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
-app.MapGet("/", () => "Hello World!");
 
-/// <summary>
-/// Liste over alle ToDo
-/// </summary>
-/// <returns></returns>
+app.UseRewriter(new RewriteOptions().AddRedirect("tasks/(.*)", "ToDoList/$1"));
+
+app.Use(async (context, next) => //gør dette seperat, parrallel programming
+{
+    //giv information om hvad der sker nu
+    Console.WriteLine($"[{context.Request.Method} {context.Request.Path} {DateTime.UtcNow}] Started.");
+    await next(context); //vent til informationen er færdig
+
+    //giv information om hvad der sker nu når det færdigt
+    Console.WriteLine($"[{context.Request.Method} {context.Request.Path} {DateTime.UtcNow}] Finished.");
+});
+
+
 List<ToDo> ToDoList  = new List<ToDo>(); //ToDo list
 
 /// <summary>
 /// Returnere ToDoList
 /// </summary>
-app.MapGet("/ToDoList/{ToDoList}", () => ToDoList);
+app.MapGet("/ToDoList", () => ToDoList);
 
 ///<summary>
 ///Returnere en ToDo ud fra id givet i parameteren. Hvis ingen findes returneres error 404.
 ///hvis flere med samme Id findes retuneres DuplicateId.
 ///</summary>
-app.MapGet("/ToDo/{Id}", Results<Ok<ToDo>, NotFound> (int id) => {
+app.MapGet("/ToDoList/{Id}", Results<Ok<ToDo>, NotFound> (int id) => {
     try {
     var targetToDo = ToDoList.SingleOrDefault(t => id == t.Id); //
     return targetToDo is null

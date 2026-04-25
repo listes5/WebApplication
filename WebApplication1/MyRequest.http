@@ -1,1 +1,21 @@
-GET http://localhost:5210/
+GET http://localhost:5210/ToDoList
+
+###
+
+POST http://localhost:5210/ToDoList
+Content-Type: application/json 
+
+{
+    "id": 1,
+    "name": "Bliv Jesus",
+    "dueDate": "2026-03-23",
+    "isComplete": false
+}
+
+###
+
+DELETE http://localhost:5210/ToDoList/1
+
+###
+
+GET http://localhost:5210/tasks/1
