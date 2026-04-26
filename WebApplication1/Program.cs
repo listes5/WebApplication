@@ -4,8 +4,12 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using WebApplication1.ExceptionHandling;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Rewrite;
+using WebApplication1;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSingleton<ITaskService>(new InMemoryTaskService());
+
 var app = builder.Build();
 
 /// <summary>
@@ -33,15 +37,18 @@ List<ToDo> ToDoList  = new List<ToDo>(); //ToDo list
 /// <summary>
 /// Returnere ToDoList
 /// </summary>
-app.MapGet("/ToDoList", () => ToDoList);
+
+// app.MapGet("/ToDoList", () => ToDoList);
+app.MapGet("/ToDoList", (ITaskService service) => service.GetToDoList());
 
 ///<summary>
 ///Returnere en ToDo ud fra id givet i parameteren. Hvis ingen findes returneres error 404.
 ///hvis flere med samme Id findes retuneres DuplicateId.
 ///</summary>
-app.MapGet("/ToDoList/{Id}", Results<Ok<ToDo>, NotFound> (int id) => {
+app.MapGet("/ToDoList/{Id}", Results<Ok<ToDo>, NotFound> (int id, ITaskService service) => {
     try {
-    var targetToDo = ToDoList.SingleOrDefault(t => id == t.Id); //
+    // var targetToDo = ToDoList.SingleOrDefault(t => id == t.Id);
+    var targetToDo = service.GetToDoById(id);
     return targetToDo is null
         ? TypedResults.NotFound() //hvis id ikke passer til en ToDo
         : TypedResults.Ok(targetToDo);  //hvis id passer til en ToDo
@@ -55,8 +62,8 @@ app.MapGet("/ToDoList/{Id}", Results<Ok<ToDo>, NotFound> (int id) => {
 /// <summary>
 /// Fjerner alle ToDo fra ToDoList med givet id
 /// </summary>
-app.MapDelete("/ToDoList/{Id}", (int id) => {
-    ToDoList.RemoveAll(t => id == t.Id);
+app.MapDelete("/ToDoList/{Id}", (int id, ITaskService service) => {
+    service.DeleteToDoById(id);
     return TypedResults.NoContent();
 });
 
@@ -67,11 +74,29 @@ app.MapDelete("/ToDoList/{Id}", (int id) => {
 ///<param>
 /// Selve den ToDo der bliver skabt
 ///</param>
-app.MapPost("/ToDoList", (ToDo task) => {
-    ToDoList.Add(task);
+app.MapPost("/ToDoList", (ToDo task, ITaskService service) => {
+    service.AddToDO(task);
     return TypedResults.Created("/ToDoList/{Id}", task);
 
+}) //endpoint filter
+    //giver error feedback
+.AddEndpointFilter(async (context, next) => {
+    var taskArgument = context.GetArgument<ToDo>(0);
+    var errorDic = new Dictionary<string, string[]>();
+    if (taskArgument.DueDate < DateTime.UtcNow) {
+        errorDic.Add(nameof(ToDo.DueDate), ["Cannot have due date in a past date"]);
+    }
+    if (taskArgument.IsComplete) {
+        errorDic.Add(nameof(ToDo.IsComplete), ["Cannot add an allready completed task"]);
+    }
+    if (errorDic.Count > 0) {
+        return Results.ValidationProblem(errorDic);
+    }
+    return await next(context);
+
 });
+
+
 
 app.Run();
 
@@ -79,3 +104,4 @@ app.Run();
 /// record af hvad en ToDo indeholder
 ///</summary>
 public record ToDo(int Id, string Name, DateTime DueDate, bool IsComplete); //record for ToDo type
+

@@ -13,7 +13,19 @@ primary
 lastDtbSucceeded
 
 [properties]
-SolutionPath=<PATH>../-nskeSkyWebApplication/WebApplication1.sln
+AssemblyName=WebApplication1
+CommandLineArgsForDesignTimeEvaluation=-langversion:14.0 -define:TRACE
+CompilerGeneratedFilesOutputPath=
+MaxSupportedLangVersion=14.0
+ProjectAssetsFile=<PATH>obj/project.assets.json
+RootNamespace=WebApplication1
+RunAnalyzers=
+RunAnalyzersDuringLiveAnalysis=
+SolutionPath=<PATH>../WebApplication1.sln
+TargetFrameworkIdentifier=.NETCoreApp
+TargetPath=<PATH>bin/Debug/net10.0/WebApplication1.dll
+TargetRefPath=<PATH>obj/Debug/net10.0/ref/WebApplication1.dll
+TemporaryDependencyNodeTargetIdentifier=net10.0
 
 [commandLineArguments]
 /noconfig
@@ -44,6 +56,8 @@ SolutionPath=<PATH>../-nskeSkyWebApplication/WebApplication1.sln
 
 [sourceFiles]
 ExceptionHandling/DuplicateId.cs
+InMemoryTaskService.cs
+ITaskService.cs
 obj/Debug/net10.0/
  .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
  WebApplication1.AssemblyInfo.cs
@@ -389,6 +403,6 @@ Program.cs
  Microsoft.CodeAnalysis.NetAnalyzers.dll
 
 [analyzerConfigFiles]
-../.editorconfig
+../../.editorconfig
 <DOTNET>/sdk/10.0.201/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_default.globalconfig
 obj/Debug/net10.0/WebApplication1.GeneratedMSBuildEditorConfig.editorconfig
