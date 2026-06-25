@@ -1,16 +1,19 @@
-using System;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using WebApplication1.ExceptionHandling;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Rewrite;
-using WebApplication1;
+using Microsoft.AspNetCore.Mvc;
+using WebApplication1.TaskService;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSingleton<ITaskService>(new InMemoryTaskService());
+builder.Services.AddSingleton<ITaskService>(new ToDoTaskService());
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 /// <summary>
 /// diregere at hvis man skriver task/(int) så viderfører det den til ToDoList/int
@@ -31,32 +34,24 @@ app.Use(async (context, next) => //gør dette seperat, parrallel programming
     Console.WriteLine($"[{context.Request.Method} {context.Request.Path} {DateTime.UtcNow}] Finished.");
 });
 
-
-List<ToDo> ToDoList  = new List<ToDo>(); //ToDo list
-
 /// <summary>
 /// Returnere ToDoList
 /// </summary>
-
-// app.MapGet("/ToDoList", () => ToDoList);
 app.MapGet("/ToDoList", (ITaskService service) => service.GetToDoList());
 
 ///<summary>
-///Returnere en ToDo ud fra id givet i parameteren. Hvis ingen findes returneres error 404.
-///hvis flere med samme Id findes retuneres DuplicateId.
+///Returnere en ToDo ud fra id givet i parameteren. Hvis ingen findes returneres error 404 med ProblemDetails.
+///hvis flere med samme Id findes returneres 409 Conflict via GlobalExceptionHandler.
 ///</summary>
-app.MapGet("/ToDoList/{Id}", Results<Ok<ToDo>, NotFound> (int id, ITaskService service) => {
-    try {
-    // var targetToDo = ToDoList.SingleOrDefault(t => id == t.Id);
-    var targetToDo = service.GetToDoById(id);
+app.MapGet("/ToDoList/{Id}", Results<Ok<ToDo>, NotFound<ProblemDetails>> (int id, ITaskService service) => {
+    var targetToDo = service.GetToDoById(id); //smider selv DuplicateId hvis flere matcher
     return targetToDo is null
-        ? TypedResults.NotFound() //hvis id ikke passer til en ToDo
-        : TypedResults.Ok(targetToDo);  //hvis id passer til en ToDo
-    }
-    //i tilfælde der flere med samme id, udnødvendigt men havde lyst til at lave det :)
-    catch (InvalidOperationException) {
-        throw new DuplicateId(id);
-    }
+        ? TypedResults.NotFound(new ProblemDetails {
+            Status = StatusCodes.Status404NotFound,
+            Title = "ToDo not found",
+            Detail = $"Der findes ingen ToDo med id {id}"
+        })
+        : TypedResults.Ok(targetToDo);
 });
 
 /// <summary>
@@ -69,30 +64,24 @@ app.MapDelete("/ToDoList/{Id}", (int id, ITaskService service) => {
 
 
 ///<summary>
-///Skaber en Todo ud fra paramerteren samt tilføjer den til ToDoList
+///Skaber en Todo ud fra en ToDoTask og tilføjer den til ToDoList
 ///</summary>
-///<param>
-/// Selve den ToDo der bliver skabt
-///</param>
-app.MapPost("/ToDoList", (ToDo task, ITaskService service) => {
-    service.AddToDO(task);
-    return TypedResults.Created("/ToDoList/{Id}", task);
+app.MapPost("/ToDoList", (ToDoTask task, ITaskService service) => {
+    ToDo toDoTask = service.AddToDO(task);
+    return TypedResults.Created($"/ToDoList/{toDoTask.Id}", toDoTask);
 
 }) //endpoint filter
     //giver error feedback
-.AddEndpointFilter(async (context, next) => {
-    var taskArgument = context.GetArgument<ToDo>(0);
-    var errorDic = new Dictionary<string, string[]>();
-    if (taskArgument.DueDate < DateTime.UtcNow) {
-        errorDic.Add(nameof(ToDo.DueDate), ["Cannot have due date in a past date"]);
-    }
-    if (taskArgument.IsComplete) {
-        errorDic.Add(nameof(ToDo.IsComplete), ["Cannot add an allready completed task"]);
-    }
-    if (errorDic.Count > 0) {
-        return Results.ValidationProblem(errorDic);
-    }
-    return await next(context);
+    .AddEndpointFilter(async (context, next) => {
+        var taskArgument = context.GetArgument<ToDoTask>(0);
+        var errorDic = new Dictionary<string, string[]>();
+        if (taskArgument.DueDate < DateTime.UtcNow) {
+            errorDic.Add(nameof(ToDoTask.DueDate), ["Cannot have due date in a past date"]);
+        }
+        if (errorDic.Count > 0) {
+            return Results.ValidationProblem(errorDic);
+        }
+        return await next(context);
 
 });
 
@@ -104,4 +93,4 @@ app.Run();
 /// record af hvad en ToDo indeholder
 ///</summary>
 public record ToDo(int Id, string Name, DateTime DueDate, bool IsComplete); //record for ToDo type
-
+public record ToDoTask(string Name, DateTime DueDate); 
