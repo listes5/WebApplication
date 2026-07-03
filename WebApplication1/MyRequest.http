@@ -12,8 +12,38 @@ Content-Type: application/json
 
 ###
 
-DELETE http://localhost:5210/ToDoList/3
+POST http://localhost:5210/ToDoList 
+Content-Type: application/json 
+
+{
+    "name": "Bliv Faceit10",
+    "dueDate": "2029-05-23"
+}
 
 ###
 
-GET http://localhost:5210/tasks/5
+DELETE http://localhost:5210/ToDoList/4
+
+###
+
+GET http://localhost:5210/tasks/2
+
+###
+
+PUT http://localhost:5210/ToDoList/1
+Content-Type: application/json
+
+{
+    "name": "RASMUS KLUMP",
+    "dueDate": "2022-05-23"
+}
+
+###
+
+PUT http://localhost:5210/ToDoList/1
+Content-Type: application/json
+
+{
+    "name": "UMP",
+    "dueDate": "2029-05-23"
+}

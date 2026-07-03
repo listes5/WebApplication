@@ -6,5 +6,6 @@ public interface ITaskService {
     public List<ToDo> GetToDoList();
     public void DeleteToDoById(int id);
     public ToDo AddToDO(ToDoTask task);
+    public ToDo UpdateToDo(int id, ToDoTask task);
 
 }

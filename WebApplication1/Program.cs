@@ -44,7 +44,9 @@ app.MapGet("/ToDoList", (ITaskService service) => service.GetToDoList());
 ///hvis flere med samme Id findes returneres 409 Conflict via GlobalExceptionHandler.
 ///</summary>
 app.MapGet("/ToDoList/{Id}", Results<Ok<ToDo>, NotFound<ProblemDetails>> (int id, ITaskService service) => {
-    var targetToDo = service.GetToDoById(id); //smider selv DuplicateId hvis flere matcher
+    var targetToDo = service.GetToDoById(id); 
+    
+    //smider selv DuplicateId hvis flere matcher
     return targetToDo is null
         ? TypedResults.NotFound(new ProblemDetails {
             Status = StatusCodes.Status404NotFound,
@@ -84,6 +86,31 @@ app.MapPost("/ToDoList", (ToDoTask task, ITaskService service) => {
         return await next(context);
 
 });
+
+///<summary>
+///Ændre navn og DueDate på en eksiterende ToDo udfra id
+///</summary>
+app.MapPut("/ToDoList/{Id}", (int id, ToDoTask task, ITaskService service) => {
+    var targetToDo = service.GetToDoById(id);
+    if (targetToDo is null) {
+        return Results.NotFound(new ProblemDetails {
+            Status = StatusCodes.Status404NotFound,
+            Title = "ToDo not found",
+            Detail = $"Der findes ingen ToDo med id {id}"
+        });
+    }
+    else if (task.DueDate < DateTime.UtcNow)
+    {
+        return Results.Problem(new ProblemDetails {
+            Status = StatusCodes.Status400BadRequest,
+            Title = "DueDate invalid",
+            Detail = "Cannot have due date in a past date"
+        });
+    }
+    var updated = service.UpdateToDo(id, task); // skal implementeres i service
+    return Results.Ok(updated);
+});
+
 
 
 

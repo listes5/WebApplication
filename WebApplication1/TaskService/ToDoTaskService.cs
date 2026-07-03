@@ -36,4 +36,16 @@ public class ToDoTaskService : ITaskService {
     public List<ToDo> GetToDoList() {
         return toDoList;
     }
+
+    public ToDo UpdateToDo(int id, ToDoTask task)
+    {
+        if (GetToDoById(id) != null) {
+            toDoList.Remove(GetToDoById(id)!);
+            DeleteToDoById(id);
+            ToDo updated = new ToDo(id, task.Name, task.DueDate, false);
+            toDoList.Add(updated);
+            return updated;
+        }
+        else throw new Exception();
+    }
 }

@@ -11,8 +11,10 @@ public class GlobalExceptionHandler : IExceptionHandler
         CancellationToken cancellationToken)
     {
         var (statusCode, title) = exception switch
-        {
-            DuplicateId => (StatusCodes.Status409Conflict, "Duplicate Id"),
+        {  
+            //switch statement der indeholder de forskellige error håndteringer
+            //ikke open closed 
+            DuplicateId => (StatusCodes.Status409Conflict, "Duplicate Id"), 
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred")
         };
 
@@ -20,6 +22,7 @@ public class GlobalExceptionHandler : IExceptionHandler
 
         await httpContext.Response.WriteAsJsonAsync(new ProblemDetails
         {
+//https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.problemdetails?view=aspnetcore-10.0
             Status = statusCode,
             Title = title,
             Detail = exception.Message
